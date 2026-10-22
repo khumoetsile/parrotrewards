@@ -2,7 +2,15 @@
 
 ## Inspection and scope
 
-This checkout has no `.git` metadata, remotes, branches, or existing CI provider configuration. No repository was initialized or pushed. The new workflow assumes GitHub and a production branch named `main`; change both branch references if your actual production branch differs. It covers the backend only, not Flutter or the merchant portal.
+The initial checkout had no Git metadata or CI configuration. It is now connected to `https://github.com/khumoetsile/parrotrewards` on production branch `main`. The workflow covers the backend only, not publishing Flutter or the merchant portal.
+
+## Configured hosting
+
+The production API is `https://api.parrotrewards.org` on cPanel account `parrotrewards`, application root `/home/parrotrewards/apps/parrot`, with CloudLinux Node 22.23.3 and LiteSpeed. Startup is `app.cjs`. Dependencies install successfully in individual release directories using `/opt/alt/alt-nodejs22/root/usr/bin` on PATH. The shared environment, MySQL database/user `parrotrewards_api`, notification mailbox `notifications@parrotrewards.org`, and minute-by-minute locked OCR cron are configured. Production credentials are stored only in `shared/runtime.env` with mode 600; recover/manage them through the hosting account, never Git.
+
+The GitHub `production` environment contains the five encrypted SSH secrets and two application variables listed below, and permits deployments from `main` only. GitHub authenticates using the dedicated deployment key whose public half is authorized in cPanel.
+
+The bootstrap pins Prisma to the native engine generated on the host because Passenger and SSH detect OpenSSL differently. Both web and cron set small thread pools: without limits, the 32-core host caused the account to exhaust its process quota during concurrent migration/API/worker activity. Tokio and Rayon use two workers, as does libuv. `restart.sh` handles both Passenger's marker and this application's exact detached LiteSpeed process, without touching other applications. The API subdomain redirects HTTP to HTTPS; the main website is outside this backend deployment.
 
 The backend is `parrot-rewards-api`: Express 5.1, TypeScript 5.9 with NodeNext/ES modules, Prisma/client 6.12, and MySQL. `src/server.ts` builds to `dist/server.js`; `src/worker.ts` builds to `dist/worker.js`. Local commands remain `npm run dev` and `npm run worker`. Production uses Node 22 (22.12 or later), `npm run build`, `npm start`, and `npm run worker:once`. Three committed migrations cover the initial schema, offer claims, and category archival. Local Docker MySQL remains on port 3307; production uses the cPanel database port, normally 3306.
 

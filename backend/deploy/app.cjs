@@ -2,6 +2,9 @@
 const path = require('node:path');
 const fs = require('node:fs');
 process.chdir(__dirname);
+process.env.TOKIO_WORKER_THREADS ||= '2';
+process.env.RAYON_NUM_THREADS ||= '2';
+process.env.UV_THREADPOOL_SIZE ||= '2';
 const release = fs.realpathSync(path.join(__dirname, 'current'));
 process.env.DOTENV_CONFIG_PATH = path.join(__dirname, 'shared', 'runtime.env');
 process.env.APP_REVISION = fs.readFileSync(path.join(release, 'REVISION'), 'utf8').trim();

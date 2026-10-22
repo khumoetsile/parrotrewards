@@ -13,6 +13,9 @@ exec 9>"$root/shared/deploy.lock"
 flock -n 9 || { echo 'Deployment already running'; exit 1; }
 # Trusted, host-owned activation script. Needed for SSH shells as well as cron.
 source "$root/shared/node-env.sh"
+export TOKIO_WORKER_THREADS="${TOKIO_WORKER_THREADS:-2}"
+export RAYON_NUM_THREADS="${RAYON_NUM_THREADS:-2}"
+export UV_THREADPOOL_SIZE="${UV_THREADPOOL_SIZE:-2}"
 [[ "$(node -p 'process.versions.node.split(".")[0]')" == 22 ]] || { echo 'Node 22 required'; exit 1; }
 mkdir -p "$root/releases" "$root/tmp"
 release="$root/releases/$revision"
