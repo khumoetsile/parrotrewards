@@ -1,3 +1,5 @@
+export 'welcome.dart' show WelcomeScreen;
+
 import 'dart:convert';
 
 import '../../core/navigation.dart';
@@ -38,84 +40,6 @@ class _SplashState extends ConsumerState<SplashScreen> {
           fontSize: 52,
           fontWeight: FontWeight.w800,
           color: Color(0xff16755d),
-        ),
-      ),
-    ),
-  );
-}
-
-class WelcomeScreen extends StatelessWidget {
-  const WelcomeScreen({super.key});
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    body: SafeArea(
-      child: LayoutBuilder(
-        builder: (context, bounds) => SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: bounds.maxHeight),
-            child: Padding(
-              padding: const EdgeInsets.all(28),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Parrot Rewards',
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xff16755d),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 32),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(
-                          Icons.flutter_dash,
-                          size: 90,
-                          color: Color(0xff16755d),
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'More experiences.\nBetter discounts.',
-                          style: Theme.of(context).textTheme.headlineLarge
-                              ?.copyWith(fontWeight: FontWeight.w900),
-                        ),
-                        const SizedBox(height: 18),
-                        const Text(
-                          'Discover music festival discounts, hardware finds and auto spares. Save an offer in My Claims and present it for provider validation.',
-                          style: TextStyle(fontSize: 17, height: 1.6),
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Save a discount, then present your claim to the provider. A claim does not confirm payment or admission.',
-                          style: TextStyle(
-                            height: 1.5,
-                            color: Color(0xff5b6d60),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      FilledButton(
-                        onPressed: () => context.go('/register'),
-                        child: const Text('Get started'),
-                      ),
-                      TextButton(
-                        onPressed: () => context.go('/login'),
-                        child: const Text('Already a member? Sign in'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
         ),
       ),
     ),
@@ -185,8 +109,14 @@ class _AuthState extends ConsumerState<AuthScreen> {
     body: Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
+        child: Container(
           constraints: const BoxConstraints(maxWidth: 480),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: const Color(0xffdfe7df)),
+            borderRadius: BorderRadius.circular(24),
+          ),
           child: Form(
             key: form,
             child: Column(
@@ -373,8 +303,14 @@ class _RecoveryState extends ConsumerState<RecoveryScreen> {
     body: Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
+        child: Container(
           constraints: const BoxConstraints(maxWidth: 480),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: const Color(0xffdfe7df)),
+            borderRadius: BorderRadius.circular(24),
+          ),
           child: done
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -4,7 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 const apiUrl = String.fromEnvironment(
   'API_URL',
-  defaultValue: 'http://10.0.2.2:3000/api',
+  defaultValue: 'https://api.parrotrewards.org/api',
 );
 final apiProvider = Provider<Api>((ref) => Api());
 

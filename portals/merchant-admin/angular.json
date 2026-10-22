@@ -37,6 +37,16 @@
                   "with": "src/api-base.production.ts"
                 }
               ]
+            },
+            "development": {
+              "optimization": false,
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/api-base.ts",
+                  "with": "src/api-base.local.ts"
+                }
+              ]
             }
           }
         },
@@ -44,7 +54,13 @@
           "builder": "@angular/build:dev-server",
           "options": {
             "buildTarget": "portal:build"
-          }
+          },
+          "configurations": {
+            "development": {
+              "buildTarget": "portal:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
         }
       }
     }

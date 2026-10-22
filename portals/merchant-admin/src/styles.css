@@ -20,3 +20,39 @@ header{padding:10px 28px;gap:18px}header .brand{font-size:23px}header>span{font-
 .button-link{display:inline-flex;align-items:center;min-height:40px;padding:10px 16px;background:#16755d;color:white;border-radius:9px;font-size:13px;text-decoration:none;font-weight:600}.table-link{font-size:12px;color:#16755d;margin-left:8px;text-decoration:underline}.row-actions{display:inline-block;margin-left:4px;font-size:11px}.row-actions summary{cursor:pointer;color:#526963;padding:7px}.row-actions[open]{padding:7px;background:#f1f6ef;border:1px solid #dfe7d9;border-radius:7px}.row-actions button{font-size:11px;padding:7px;min-height:30px}.filter-bar>input[type=search]{min-width:180px;max-width:360px;margin:0}.filter-bar>app-search-select{width:180px;flex-shrink:0}.filter-bar{flex-wrap:wrap}.workspace .table td:first-child small{max-width:380px}.workspace .table td{overflow-wrap:anywhere}
 
 .cell-summary{display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:320px}.table-link{display:inline-flex;align-items:center;min-height:44px;padding:6px 10px;color:#146548;font-weight:600}
+
+/* Responsive layouts: readable forms and contained data tables on every screen. */
+html{scrollbar-gutter:stable}body{min-width:0}button,input,select,textarea{font:inherit}
+main.login{width:min(480px,calc(100% - 40px));margin:clamp(24px,8vh,88px) auto;padding:clamp(24px,4vw,40px);border:1px solid var(--line);box-shadow:0 20px 70px #123f320b}
+main.login h1{font-size:clamp(28px,4vw,38px);line-height:1.14;max-width:350px}
+main.login .brand{font-size:26px;letter-spacing:-1px}main.login label{display:block;margin-top:18px;font-size:14px;font-weight:600}
+main.login input{width:100%;min-height:48px;margin-top:8px}main.login button{min-height:46px}main.login button[type=submit],main.login form>button:last-child{width:100%;margin:16px 0 20px}main.login .small-button{margin-top:10px}
+header{flex-wrap:wrap;max-width:none;gap:12px 24px;padding:16px max(24px,calc((100vw - 1440px)/2))}
+header nav{display:flex;flex-wrap:wrap;gap:4px;min-width:0}header nav a{display:inline-flex;align-items:center;min-height:44px}
+section:not(.offer-editor){width:100%;max-width:1440px;padding:32px clamp(16px,3vw,40px)}
+.workspace-heading{display:flex;flex-wrap:wrap;align-items:center;gap:16px;justify-content:space-between}
+.workspace .table,.table-wrap{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+.workspace .filter-bar{align-items:flex-end;gap:12px}.workspace .filter-bar>*{min-width:0}
+.workspace .filter-bar input,.workspace .filter-bar button,.select-trigger{min-height:44px}
+.workspace .small-button,.workspace-tabs button,.pagination button{min-height:40px}
+.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.form-grid,.editor-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+input,textarea,select{max-width:100%}.offer-editor{width:min(960px,100%)}.offer-editor .editor-actions{flex-wrap:wrap;gap:10px}.offer-editor .editor-actions button{min-height:44px}
+@media(min-width:1600px){section:not(.offer-editor){padding-top:44px}.workspace-heading h1{font-size:36px}}
+@media(max-width:1000px){header nav{order:3;flex-basis:100%}header>.brand{margin-right:auto}header>span{flex:0 1 auto}.image-upload{grid-template-columns:minmax(0,1fr) 180px}.workspace .filter-bar .search-field{max-width:none;flex:1 1 100%}}
+@media(max-width:600px){
+  header{padding:12px 16px;gap:8px}header .brand{font-size:21px}header>span{max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  header nav{gap:2px}header nav a{padding:8px 10px;font-size:12px}
+  section:not(.offer-editor){padding:24px 16px}.workspace-heading h1{font-size:27px}.workspace .intro{font-size:14px}
+  .workspace-tabs{width:100%;flex-wrap:wrap}.workspace-tabs button{flex:1 1 auto;white-space:normal}
+  .workspace .filter-bar{padding:14px}.workspace .filter-bar>*,.workspace .filter-bar .select-field,.workspace .filter-bar>app-search-select{flex:1 1 100%;width:100%;max-width:none}
+  .workspace .filter-bar>input[type=search]{min-width:0;max-width:none;width:100%}
+  .metrics{grid-template-columns:1fr;gap:10px}.form-grid,.editor-grid,.grid{grid-template-columns:1fr}
+  .records-search,.inline-form{flex-wrap:wrap}.records-search input,.inline-form label{max-width:none;flex:1 1 100%}
+  .editor-backdrop{padding:8px}.offer-editor{max-height:calc(100dvh - 16px);border-radius:18px;padding:20px 16px}
+  .editor-heading{align-items:flex-start}.editor-heading h2{font-size:24px}.image-upload{grid-template-columns:1fr;gap:16px}.image-preview{max-width:320px}
+  .offer-editor .editor-actions{bottom:-20px}.editor-actions span{flex-basis:100%}.editor-actions button{flex:1}
+  .pagination{gap:12px}.pagination>span{flex-basis:100%}.pagination>div{flex-wrap:wrap}
+  main.login{width:calc(100% - 32px);margin:24px auto;border-radius:22px;padding:24px}
+  main.login input,.workspace .filter-bar input,.offer-editor input,.offer-editor textarea,.search-select input.select-search{font-size:16px}
+  .workspace .small-button,.workspace-tabs button,.pagination button{min-height:44px}
+}

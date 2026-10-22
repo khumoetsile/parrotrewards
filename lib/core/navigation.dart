@@ -12,16 +12,19 @@ class AppNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, bounds) {
-      final wide = bounds.maxWidth >= 850;
+      final wide = bounds.maxWidth >= 760;
       return Scaffold(
         body: wide
             ? Row(
                 children: [
                   SafeArea(
                     child: NavigationRail(
+                      extended: bounds.maxWidth >= 1200,
                       selectedIndex: navigationShell.currentIndex,
                       onDestinationSelected: select,
-                      labelType: NavigationRailLabelType.all,
+                      labelType: bounds.maxWidth >= 1200
+                          ? NavigationRailLabelType.none
+                          : NavigationRailLabelType.all,
                       destinations: const [
                         NavigationRailDestination(
                           icon: Icon(Icons.explore_outlined),
@@ -44,7 +47,14 @@ class AppNavigation extends StatelessWidget {
                     ),
                   ),
                   const VerticalDivider(width: 1),
-                  Expanded(child: navigationShell),
+                  Expanded(
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1120),
+                        child: navigationShell,
+                      ),
+                    ),
+                  ),
                 ],
               )
             : navigationShell,

@@ -8,7 +8,9 @@ Published successfully on 22 October 2026 through [GitHub workflow 39772325297](
 
 The customer website uses the existing Flutter application compiled to JavaScript. Receipt preview and upload use image bytes, so the same implementation works on browsers and mobile. It is a JavaScript web build, not a Dart WebAssembly build; the current secure-storage plugin does not support Dart Wasm. Flutter renderer resources are self-hosted.
 
-The Angular portal builds with base path `/partners/` and a production-only API URL replacement. Development keeps `/api` and the existing local proxy. API calls, receipt images, QR downloads, offer artwork, and artwork uploads all use that production URL. The API's CORS configuration permits `https://parrotrewards.org`.
+Flutter and the Angular portal both default to the hosted `https://api.parrotrewards.org/api` URL. The portal builds with base path `/partners/`. Only the explicit Angular development configuration uses `/api` and the existing local proxy; local Flutter development requires an explicit API_URL override. API calls, receipt images, QR downloads, offer artwork, and artwork uploads all use the hosted production URL. The API's CORS configuration permits `https://parrotrewards.org`.
+
+The customer welcome page adapts between a two-column desktop layout and a stacked mobile layout. Content is bounded on large monitors, discovery uses one/two/three offer columns, and navigation changes between phone tabs, a tablet rail, and an extended desktop rail. Partner forms, filters, dialogs, navigation, and table containers adapt to narrow screens. Viewport regression tests cover 320, 390, 768, 1440, and 1920 pixels, including registration and navigation state preservation when resizing.
 
 ## Automatic publishing
 

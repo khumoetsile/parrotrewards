@@ -13,6 +13,15 @@ class ParrotRewardsApp extends ConsumerWidget {
     title: 'Parrot Rewards',
     debugShowCheckedModeBanner: false,
     theme: parrotRewardsTheme,
+    builder: (context, child) => ColoredBox(
+      color: const Color(0xffeaf0e8),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1440),
+          child: child ?? const SizedBox.shrink(),
+        ),
+      ),
+    ),
     routerConfig: ref.watch(routerProvider),
   );
 }

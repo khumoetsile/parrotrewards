@@ -252,21 +252,43 @@ class _DiscoverState extends ConsumerState<DiscoverOffersScreen> {
             builder: (items) => Column(
               children: [
                 if ((items as List).isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(30),
+                  Padding(
+                    padding: const EdgeInsets.all(30),
                     child: Text(
-                      'No offers match your search. Try another category.',
+                      search.text.isEmpty && category.isEmpty
+                          ? 'New offers will appear here when providers publish them.'
+                          : 'No offers match your search. Try another category.',
                     ),
                   ),
-                ...items.map((json) {
-                  final offer = PromotionOffer.fromJson(
-                    Map<String, dynamic>.from(json),
-                  );
-                  return OfferCard(
-                    offer: offer,
-                    onTap: () => context.push('/offers/${offer.slug}'),
-                  );
-                }),
+                LayoutBuilder(
+                  builder: (context, bounds) {
+                    final columns = bounds.maxWidth >= 1000
+                        ? 3
+                        : bounds.maxWidth >= 660
+                        ? 2
+                        : 1;
+                    final width =
+                        (bounds.maxWidth - 20 * (columns - 1)) / columns;
+                    return Wrap(
+                      spacing: 20,
+                      children: [
+                        ...items.map((json) {
+                          final offer = PromotionOffer.fromJson(
+                            Map<String, dynamic>.from(json),
+                          );
+                          return SizedBox(
+                            width: width,
+                            child: OfferCard(
+                              offer: offer,
+                              onTap: () =>
+                                  context.push('/offers/${offer.slug}'),
+                            ),
+                          );
+                        }),
+                      ],
+                    );
+                  },
+                ),
                 Wrap(
                   alignment: WrapAlignment.spaceBetween,
                   spacing: 12,
