@@ -4,6 +4,8 @@
 - Merchant and administrator portal: `https://parrotrewards.org/partners/`
 - API: `https://api.parrotrewards.org/api`
 
+Published successfully on 22 October 2026 through [GitHub workflow 39772325297](https://github.com/khumoetsile/parrotrewards/actions/runs/39772325297), revision `40d3f7c700ac8b30f9842bc455a4b5ec4e4b25a7`. All 29 Flutter tests and 21 portal tests passed. The live customer welcome/registration screens and partner sign-in screen were checked in the browser. Both version endpoints, portal deep links, renderer assets, HTTPS, and API readiness were verified; internal release paths and environment files are blocked.
+
 The customer website uses the existing Flutter application compiled to JavaScript. Receipt preview and upload use image bytes, so the same implementation works on browsers and mobile. It is a JavaScript web build, not a Dart WebAssembly build; the current secure-storage plugin does not support Dart Wasm. Flutter renderer resources are self-hosted.
 
 The Angular portal builds with base path `/partners/` and a production-only API URL replacement. Development keeps `/api` and the existing local proxy. API calls, receipt images, QR downloads, offer artwork, and artwork uploads all use that production URL. The API's CORS configuration permits `https://parrotrewards.org`.
