@@ -10,6 +10,8 @@ The production API is `https://api.parrotrewards.org` on cPanel account `parrotr
 
 The GitHub `production` environment contains the five encrypted SSH secrets and two application variables listed below, and permits deployments from `main` only. GitHub authenticates using the dedicated deployment key whose public half is authorized in cPanel.
 
+End-to-end GitHub verification and deployment succeeded on 22 October 2026: [workflow run 39771106508](https://github.com/khumoetsile/parrotrewards/actions/runs/39771106508), deploying backend revision `40005a50ef904d8ac0865df573bd829a2a1c89c5`. Subsequent documentation-only commits do not trigger deployment.
+
 The bootstrap pins Prisma to the native engine generated on the host because Passenger and SSH detect OpenSSL differently. Both web and cron set small thread pools: without limits, the 32-core host caused the account to exhaust its process quota during concurrent migration/API/worker activity. Tokio and Rayon use two workers, as does libuv. `restart.sh` handles both Passenger's marker and this application's exact detached LiteSpeed process, without touching other applications. The API subdomain redirects HTTP to HTTPS; the main website is outside this backend deployment.
 
 The backend is `parrot-rewards-api`: Express 5.1, TypeScript 5.9 with NodeNext/ES modules, Prisma/client 6.12, and MySQL. `src/server.ts` builds to `dist/server.js`; `src/worker.ts` builds to `dist/worker.js`. Local commands remain `npm run dev` and `npm run worker`. Production uses Node 22 (22.12 or later), `npm run build`, `npm start`, and `npm run worker:once`. Three committed migrations cover the initial schema, offer claims, and category archival. Local Docker MySQL remains on port 3307; production uses the cPanel database port, normally 3306.
@@ -36,7 +38,7 @@ The backend is `parrot-rewards-api`: Express 5.1, TypeScript 5.9 with NodeNext/E
 | Start command if requested | `node app.cjs` (Passenger normally starts it itself) |
 | Restart | touch `tmp/restart.txt` under application root |
 
-The first release must exist before Passenger can start successfully. Register the app and run the initial workflow, then verify the URL. Do not click root-level npm installation: dependencies live in release directories and CI installs them there. Keep the bootstrap and worker launcher synchronized manually if deployment infrastructure changes.
+The first release must exist before Passenger can start successfully. Register the app and run the initial workflow, then verify the URL. Do not click root-level npm installation: dependencies live in release directories and CI installs them there. Deployment updates the bootstrap, worker launcher, and restart helper from the verified release.
 
 ## Production environment
 
@@ -56,7 +58,7 @@ Leave `RUN_DB_TESTS` and `DEMO_PASSWORD` unset in production. No demo seed is ru
 
 ## GitHub setup
 
-Create/connect the actual GitHub repository, inspect the initial staged files for private receipts, credentials and local outputs, then push to the intended branch. Ignore rules now include secret key files, environment files, release directories and deployment archives while allowing the sanitized production example. Because there is no Git history here, whether secrets were ever committed elsewhere is unknown; rotate any credentials previously published. Never upload this entire local folder as an archive.
+The repository is connected and the initial source files were checked before pushing. Private receipts, environment credentials, native dependencies, OCR cache, and test artifacts are excluded. Ignore rules also cover secret key files, release directories and deployment archives while allowing the sanitized production example. Never upload this entire local folder as an archive. All production credentials were newly generated on the host.
 
 Create a GitHub Environment named `production`. Restrict it to `main`; add required reviewers if desired. Add these environment secrets:
 
@@ -92,12 +94,18 @@ For a manual first deployment, create the same source-only archive in `backend`,
 
 ## Local validation completed
 
-Validated Prisma schema and generated client, compiled TypeScript, and applied all three migrations to a new disposable Docker MySQL 8 database. All 34 tests passed with database integration enabled, including real Tesseract OCR and the added health/readiness regression test. The existing claims suite requires the fictional offer catalogue seed; CI now prepares that fixture. The disposable database container was removed afterward. Shell syntax, bootstrap JavaScript syntax, workflow YAML and package JSON were checked. Local execution used Node 24.18; production and CI select Node 22, which must still be verified by the first GitHub run. No cPanel session, remote Git repository, or hosted workflow run was available, so SSH activation, Passenger restart, host native-library compatibility, and public health checks remain unverified until hosting setup is supplied.
+Validated Prisma schema and generated client, compiled TypeScript, and applied all three migrations to a new disposable Docker MySQL 8 database. All 34 tests passed with database integration enabled, including real Tesseract OCR and the added health/readiness regression test. The existing claims suite requires the fictional offer catalogue seed; CI prepares that fixture. The disposable database container was removed afterward. Shell syntax, bootstrap JavaScript syntax, workflow YAML and package JSON were checked. Local execution used Node 24.18; GitHub verification also passed on Node 22.
+
+On the production host, npm installation, Prisma generation, all three migrations, and compilation succeeded. HTTPS health and database readiness pass; HTTP redirects to HTTPS, environment paths are inaccessible publicly, and unauthenticated admin access is rejected. Authenticated SMTP/TLS verification and actual OCR model loading/recognition passed without sending email or adding fictional production records. The locked cron worker ran successfully after fixing the host's OpenSSL detection and thread limits. A compressed baseline database backup is stored privately in `shared/backups`; scheduled off-site backups and restore testing remain the owner's responsibility.
 
 ## Verification and recovery
 
 Check `GET /health` (200, service/status/revision), `GET /ready` (200 or sanitized 503), password recovery mail, authenticated upload access, public offer artwork, and a complete receipt OCR flow. Check Apache's proxy/client-IP behavior and host resource quotas. Monitor queued/failed ReceiptJobs separately: API readiness does not prove cron or OCR is working. Take scheduled backups of MySQL and shared receipts/artwork, test restore, and rotate worker logs.
 
-For manual code rollback under the deployment lock, point `current` to a retained compatible release and touch `tmp/restart.txt`. Database rollback requires a reviewed forward repair or restoring a backup, with downtime/data-loss planning. Local development remains `docker compose up -d`, then the existing backend environment and npm development commands; production paths are only mandatory when `NODE_ENV=production`.
+For manual code rollback under the deployment lock, point `current` to a retained compatible release and run `bash /home/parrotrewards/apps/parrot/restart.sh /home/parrotrewards/apps/parrot`. Database rollback requires a reviewed forward repair or restoring a backup, with downtime/data-loss planning. Local development remains `docker compose up -d`, then the existing backend environment and npm development commands; production paths are only mandatory when `NODE_ENV=production`.
+
+## Connecting the clients
+
+Build Flutter with `--dart-define=API_URL=https://api.parrotrewards.org/api`. The default local API URL is preserved. The Angular portal currently requests relative `/api` URLs and needs a production reverse proxy or an explicit production API-base configuration before it can be published on another origin. Publishing the portal, creating the first real administrator, and distributing Flutter builds are separate follow-up steps; no demo accounts or offers were seeded on the production database.
 
 References: [cPanel Application Manager](https://docs.cpanel.net/cpanel/software/application-manager/), [Node application installation](https://docs.cpanel.net/knowledge-base/web-services/how-to-install-a-node.js-application/), [Passenger restart](https://support.cpanel.net/hc/en-us/articles/1500002443862-How-to-restart-an-application-that-s-using-cPanel-s-Application-Manager), [Prisma CLI](https://docs.prisma.io/docs/orm/reference/prisma-cli-reference).
