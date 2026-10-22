@@ -32,6 +32,7 @@ npm run db:migrate
 printf '%s\n' "$revision" > REVISION
 install -m 644 deploy/app.cjs "$root/app.cjs"
 install -m 700 deploy/worker.sh "$root/worker.sh"
+install -m 700 deploy/restart.sh "$root/restart.sh"
 previous=$(readlink "$root/current" || true)
 switched=0
 rollback() {
@@ -43,7 +44,7 @@ rollback() {
     else
       rm -f "$root/current"
     fi
-    touch "$root/tmp/restart.txt"
+    bash "$root/restart.sh" "$root"
     echo 'Code rolled back. Database migrations were not reversed.'
   fi
   exit "$code"
@@ -52,7 +53,7 @@ trap rollback ERR
 ln -s "$release" "$root/current.next"
 mv -Tf "$root/current.next" "$root/current"
 switched=1
-touch "$root/tmp/restart.txt"
+bash "$root/restart.sh" "$root"
 healthy=0
 for attempt in {1..30}; do
   if curl --fail --silent --show-error --max-time 10 "$health/health" | \
