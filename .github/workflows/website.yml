@@ -1,0 +1,86 @@
+name: Website CI and cPanel deployment
+on:
+  pull_request:
+    paths: ['lib/**', 'web/**', 'test/**', 'pubspec.*', 'portals/merchant-admin/**', 'deploy/web/**', '.github/workflows/website.yml']
+  push:
+    branches: [main]
+    paths: ['lib/**', 'web/**', 'test/**', 'pubspec.*', 'portals/merchant-admin/**', 'deploy/web/**', '.github/workflows/website.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: website-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.7'
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: portals/merchant-admin/package-lock.json
+      - run: flutter pub get
+      - run: flutter test
+      - run: flutter build web --release --no-web-resources-cdn --dart-define=API_URL=https://api.parrotrewards.org/api
+      - run: npm ci
+        working-directory: portals/merchant-admin
+      - run: npm test
+        working-directory: portals/merchant-admin
+      - run: npm run build -- --configuration production --base-href /partners/
+        working-directory: portals/merchant-admin
+      - name: Package public files only
+        run: |
+          mkdir -p website/customer website/partners
+          cp -a build/web/. website/customer/
+          cp -a portals/merchant-admin/dist/portal/browser/. website/partners/
+          cp deploy/web/deploy.sh deploy/web/htaccess website/
+          tar -czf website.tgz -C website .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: website
+          path: website.tgz
+          retention-days: 7
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    env:
+      DEPLOY_HOST: ${{ secrets.CPANEL_SSH_HOST }}
+      DEPLOY_PORT: ${{ secrets.CPANEL_SSH_PORT }}
+      DEPLOY_USER: ${{ secrets.CPANEL_SSH_USER }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: website
+      - name: Configure pinned SSH connection
+        env:
+          PRIVATE_KEY: ${{ secrets.CPANEL_SSH_PRIVATE_KEY }}
+          KNOWN_HOSTS: ${{ secrets.CPANEL_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$PRIVATE_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+          [[ "$DEPLOY_PORT" =~ ^[0-9]+$ ]]
+          [[ "$DEPLOY_HOST" =~ ^[a-zA-Z0-9.-]+$ ]]
+          [[ "$DEPLOY_USER" =~ ^[a-zA-Z0-9_-]+$ ]]
+      - name: Activate website release
+        run: |
+          set -euo pipefail
+          tar -xzf website.tgz ./deploy.sh
+          scp -P "$DEPLOY_PORT" website.tgz "$DEPLOY_USER@$DEPLOY_HOST:incoming-website-$GITHUB_SHA.tgz"
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "bash -s -- '$GITHUB_SHA' 'incoming-website-$GITHUB_SHA.tgz'" < deploy.sh
+      - name: Remove runner key
+        if: always()
+        run: rm -f ~/.ssh/id_ed25519

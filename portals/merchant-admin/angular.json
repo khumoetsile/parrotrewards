@@ -1,1 +1,55 @@
-{"version":1,"projects":{"portal":{"projectType":"application","root":"","sourceRoot":"src","architect":{"build":{"builder":"@angular/build:application","options":{"browser":"src/main.ts","tsConfig":"tsconfig.json","index":"src/index.html","styles":["src/styles.css"],"outputPath":"dist/portal","polyfills":["zone.js"]},"configurations":{"production":{"optimization":true,"outputHashing":"all","budgets":[{"type":"initial","maximumWarning":"700kB","maximumError":"1MB"}]}}},"serve":{"builder":"@angular/build:dev-server","options":{"buildTarget":"portal:build"}}}}},"cli":{"analytics":false}}
+{
+  "version": 1,
+  "projects": {
+    "portal": {
+      "projectType": "application",
+      "root": "",
+      "sourceRoot": "src",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "src/main.ts",
+            "tsConfig": "tsconfig.json",
+            "index": "src/index.html",
+            "styles": [
+              "src/styles.css"
+            ],
+            "outputPath": "dist/portal",
+            "polyfills": [
+              "zone.js"
+            ]
+          },
+          "configurations": {
+            "production": {
+              "optimization": true,
+              "outputHashing": "all",
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "700kB",
+                  "maximumError": "1MB"
+                }
+              ],
+              "fileReplacements": [
+                {
+                  "replace": "src/api-base.ts",
+                  "with": "src/api-base.production.ts"
+                }
+              ]
+            }
+          }
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "options": {
+            "buildTarget": "portal:build"
+          }
+        }
+      }
+    }
+  },
+  "cli": {
+    "analytics": false
+  }
+}

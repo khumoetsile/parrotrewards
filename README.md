@@ -2,6 +2,8 @@
 
 Backend production hosting: see [cPanel deployment and GitHub Actions setup](docs/CPANEL_DEPLOYMENT.md) for application settings, secrets, migrations, OCR cron, and recovery.
 
+Main website and partner portal: see [website deployment](docs/WEBSITE_DEPLOYMENT.md) for public URLs, production builds, and automatic publishing.
+
 Continue the existing Flutter project at `C:\Users\KHUMO\Desktop\Projects\App\flutter_application_1`. Flutter/Dart customer app, Node/Express/TypeScript REST API, MySQL 8/Prisma and one Angular merchant/admin portal. Completed authentication, receipt/OCR/review and provisional commission code is preserved; **Discover Offers and My Claims** are now the primary journey.
 
 ## Demonstration catalogue

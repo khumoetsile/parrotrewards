@@ -7,6 +7,7 @@ import { Component,inject,HostListener } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Api } from './api';
+import { API_BASE_URL } from './api-base';
 import { dateToInput,dateFromInput } from './dates';
 import { imageFileError,priceCents,savingsPreview } from './offer-rules';
 const emptyOffer=()=>({title:'',slug:'',description:'',categoryId:'',merchantId:'',discountedPrice:'',originalPrice:null as string|null,discountType:'PRICE',terms:'Present your claim reference to the provider to redeem this discount, subject to the offer conditions. A claim does not confirm payment or admission.',status:'DRAFT',isDemo:true,imageKey:'placeholder',startsAt:null as string|null,expiresAt:null as string|null,perUserClaimLimit:1,totalClaimLimit:null as number|null,claimTtlHours:null as number|null});
@@ -104,7 +105,7 @@ export class OffersWorkspace {
   catch(e){this.categoryError=(e as Error).message;}
   finally{this.categoryBusy=false;}
  }
- imageUrl(key:string){return key?.startsWith('upload-')?'/api/offer-images/'+key:'';}
+ imageUrl(key:string){return key?.startsWith('upload-')?API_BASE_URL+'/offer-images/'+key:'';}
  async upload(event:Event){
    const input=event.target as HTMLInputElement,file=input.files?.[0];if(!file)return;
    this.error='';this.uploading=true;

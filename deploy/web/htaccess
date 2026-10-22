@@ -1,0 +1,31 @@
+# BEGIN PARROT WEB
+Options -Indexes
+DirectoryIndex index.html
+AddType application/wasm .wasm
+RewriteEngine On
+RewriteCond %{HTTPS} !=on [OR]
+RewriteCond %{HTTP_HOST} !^parrotrewards\.org$ [NC]
+RewriteRule ^ https://parrotrewards.org%{REQUEST_URI} [R=308,L,NE]
+RewriteRule ^\.well-known/ - [L]
+# These are internal release paths, never public URLs.
+RewriteCond %{THE_REQUEST} \s/+_web(?:/|\s) [NC]
+RewriteRule ^ - [F,L]
+RewriteRule ^partners$ /partners/ [R=308,L]
+RewriteCond %{DOCUMENT_ROOT}/_web/partners/$1 -f
+RewriteRule ^partners/(.*)$ _web/partners/$1 [END]
+RewriteRule ^partners/.*\.(?:js|css|json|wasm|png|jpg|jpeg|webp|svg|ico|woff2?|ttf|otf|map)$ - [R=404,L,NC]
+RewriteRule ^partners/ _web/partners/index.html [END]
+RewriteCond %{DOCUMENT_ROOT}/_web/customer/$1 -f
+RewriteRule ^(.*)$ _web/customer/$1 [END]
+# Missing asset requests must not return an HTML application shell.
+RewriteRule \.(?:js|css|json|wasm|png|jpg|jpeg|webp|svg|ico|woff2?|ttf|otf|map)$ - [R=404,L,NC]
+RewriteRule ^ _web/customer/index.html [END]
+<IfModule mod_headers.c>
+  Header set Cache-Control "no-cache"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+<FilesMatch "^(\.env.*|\.user\.ini|php\.ini|\.htaccess)$">
+  Require all denied
+</FilesMatch>
+# END PARROT WEB

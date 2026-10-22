@@ -1,5 +1,5 @@
-import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +30,7 @@ class _CaptureState extends ConsumerState<CaptureScreen> {
   ).join();
   Map<String, dynamic>? shop;
   XFile? photo;
+  Uint8List? photoBytes;
   String? receiptId;
   bool busy = false;
   double progress = 0;
@@ -82,9 +83,11 @@ class _CaptureState extends ConsumerState<CaptureScreen> {
             maxWidth: 2000,
             maxHeight: 3000,
           );
+      final bytes = await result?.readAsBytes();
       if (result != null && mounted) {
         setState(() {
           photo = result;
+          photoBytes = bytes;
           receiptId = null;
         });
       }
@@ -119,8 +122,8 @@ class _CaptureState extends ConsumerState<CaptureScreen> {
         final response = await api.dio.post(
           '/receipts',
           data: FormData.fromMap({
-            'receipt': await MultipartFile.fromFile(
-              photo!.path,
+            'receipt': MultipartFile.fromBytes(
+              photoBytes!,
               filename: photo!.name,
               contentType: DioMediaType('image', 'jpeg'),
             ),
@@ -226,8 +229,8 @@ class _CaptureState extends ConsumerState<CaptureScreen> {
             if (photo != null)
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Image.file(
-                  File(photo!.path),
+                child: Image.memory(
+                  photoBytes!,
                   height: 220,
                   fit: BoxFit.contain,
                   semanticLabel: 'Selected receipt',
