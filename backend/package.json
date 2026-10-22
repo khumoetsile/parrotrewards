@@ -1,0 +1,54 @@
+{
+  "name": "parrot-rewards-api",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "worker": "tsx src/worker.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "tsx --test test/*.test.ts",
+    "db:generate": "prisma generate",
+    "db:validate": "prisma validate",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:seed:offers": "tsx prisma/seed-offers.ts",
+    "worker:start": "node dist/worker.js",
+    "worker:once": "node dist/worker.js --once"
+  },
+  "dependencies": {
+    "@prisma/client": "6.12.0",
+    "bcryptjs": "3.0.2",
+    "cors": "2.8.5",
+    "dotenv": "16.6.1",
+    "express": "5.1.0",
+    "express-rate-limit": "8.7.1",
+    "helmet": "8.1.0",
+    "jsonwebtoken": "9.0.2",
+    "multer": "2.4.0",
+    "nodemailer": "^10.1.2",
+    "pino-http": "10.5.0",
+    "qrcode": "1.5.4",
+    "sharp": "0.35.5",
+    "tesseract.js": "6.0.1",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/cors": "2.8.19",
+    "@types/express": "5.0.3",
+    "@types/jsonwebtoken": "9.0.10",
+    "@types/multer": "2.0.0",
+    "@types/node": "24.7.2",
+    "@types/nodemailer": "^8.0.2",
+    "@types/qrcode": "1.5.5",
+    "@types/supertest": "6.0.3",
+    "prisma": "6.12.0",
+    "supertest": "7.1.4",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=22.12.0 <25"
+  }
+}

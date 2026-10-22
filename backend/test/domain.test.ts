@@ -1,0 +1,7 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { money,commission,assertTransition,parseReceipt,receiptFlags,hamming } from '../src/domain.js';
+test('BWP is exact and commission rounds half up',()=>{assert.equal(money('123.45'),12345n);assert.equal(commission('0.05',1000),'0.01');assert.equal(commission('99999999.99',1000),'10000000.00');for(const v of ['NaN','-1','1.234','1e3','01'])assert.throws(()=>money(v));});
+test('submission cannot self-verify or reopen a terminal status',()=>{assert.throws(()=>assertTransition('SUBMITTED','VERIFIED'));assert.throws(()=>assertTransition('VERIFIED','NEEDS_REVIEW'));assertTransition('NEEDS_REVIEW','VERIFIED');});
+test('OCR parses metadata but does not prove genuineness',()=>{const text='Demo Pula Market\nReceipt No: ABC-123\n2026-10-13 12:30\nTOTAL BWP 123.45';const result=parseReceipt(text);assert.equal(result.amount,'123.45');assert.equal(result.receiptNumber,'ABC-123');assert.equal(result.receiptTime,'12:30');assert.deepEqual(receiptFlags(result,text,95,'123.45','Demo Pula Market',new Date('2026-10-13')),['INDEPENDENT_REVIEW_REQUIRED']);});
+test('unreadable, old, wrong merchant and amount need review',()=>{const flags=receiptFlags(parseReceipt('Other\n2020-01-01\nTOTAL BWP 10.00'),'Other\n2020-01-01\nTOTAL BWP 10.00',20,'12.00','Shop',new Date('2026-10-13'));for(const flag of ['LOW_OCR_CONFIDENCE','AMOUNT_MISMATCH','MERCHANT_MISMATCH','DATE_OUT_OF_RANGE'])assert.ok(flags.includes(flag));assert.equal(hamming('1010','1000'),1);});

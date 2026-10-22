@@ -1,0 +1,409 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "mysql"
+  url = env("DATABASE_URL")
+}
+enum Role {
+  CUSTOMER
+  MERCHANT
+  ADMIN
+}
+enum TransactionStatus {
+  SUBMITTED
+  PROCESSING
+  VERIFIED
+  NEEDS_REVIEW
+  REJECTED
+  CANCELLED
+}
+model User {
+  id String @id @default(uuid())
+  email String @unique @db.VarChar(191)
+  name String
+  passwordHash String
+  role Role @default(CUSTOMER)
+  active Boolean @default(true)
+  notificationEnabled Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  staff MerchantStaff[]
+  tokens RefreshToken[]
+  resets PasswordReset[]
+  receipts Receipt[]
+  transactions Transaction[]
+  notifications Notification[]
+  audits AuditLog[]
+  disputes Dispute[]
+  offerClaims OfferClaim[]
+  campaignTouches CampaignTouch[]
+  redemptions RedemptionRecord[]
+}
+model RefreshToken {
+  id String @id @default(uuid())
+  hash String @unique
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([userId])
+}
+model PasswordReset {
+  id String @id @default(uuid())
+  hash String @unique
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  usedAt DateTime?
+  createdAt DateTime @default(now())
+}
+model Merchant {
+  id String @id @default(uuid())
+  name String
+  category String
+  description String @db.Text
+  approved Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  shops Shop[]
+  staff MerchantStaff[]
+  rules CommissionRule[]
+  categoryId String?
+  categoryRecord MerchantCategory? @relation(fields: [categoryId], references: [id])
+  promotionalOffers Offer[]
+}
+model MerchantStaff {
+  userId String
+  merchantId String
+  user User @relation(fields: [userId], references: [id])
+  merchant Merchant @relation(fields: [merchantId], references: [id])
+  createdAt DateTime @default(now())
+  @@id([userId, merchantId])
+}
+model Shop {
+  id String @id @default(uuid())
+  merchantId String
+  merchant Merchant @relation(fields: [merchantId], references: [id])
+  name String
+  address String
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  qr ShopQr?
+  offers Offer[]
+  transactions Transaction[]
+  @@index([merchantId])
+}
+model ShopQr {
+  id String @id @default(uuid())
+  shopId String @unique
+  shop Shop @relation(fields: [shopId], references: [id])
+  token String @unique @db.VarChar(191)
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Offer {
+  id String @id @default(uuid())
+  shopId String?
+  shop Shop? @relation(fields: [shopId], references: [id])
+  merchantId String?
+  merchant Merchant? @relation(fields: [merchantId], references: [id])
+  categoryId String?
+  category MerchantCategory? @relation(fields: [categoryId], references: [id])
+  eventId String?
+  event Event? @relation(fields: [eventId], references: [id])
+  productId String?
+  product Product? @relation(fields: [productId], references: [id])
+  slug String? @unique @db.VarChar(191)
+  status OfferStatus @default(DRAFT)
+  isDemo Boolean @default(false)
+  originalPrice Decimal? @db.Decimal(12,2)
+  discountedPrice Decimal? @db.Decimal(12,2)
+  discountType String @default("NONE")
+  imageKey String @default("placeholder")
+  terms String? @db.Text
+  startsAt DateTime?
+  perUserClaimLimit Int @default(1)
+  totalClaimLimit Int?
+  claimedCount Int @default(0)
+  claimTtlHours Int?
+  claims OfferClaim[]
+  campaigns PromotionalCampaign[]
+  title String
+  description String @db.Text
+  active Boolean @default(true)
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Receipt {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  storageKey String @unique
+  sha256 String
+  perceptualHash String
+  mime String
+  size Int
+  createdAt DateTime @default(now())
+  transaction Transaction?
+  @@index([sha256])
+  @@index([userId])
+}
+model Transaction {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  shopId String
+  shop Shop @relation(fields: [shopId], references: [id])
+  receiptId String @unique
+  receipt Receipt @relation(fields: [receiptId], references: [id])
+  amount Decimal @db.Decimal(12,2)
+  currency String @default("BWP") @db.VarChar(3)
+  status TransactionStatus @default(SUBMITTED)
+  idempotencyKey String @db.VarChar(191)
+  requestHash String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  history StatusHistory[]
+  verification Verification?
+  flags FraudFlag[]
+  commission CommissionLedger?
+  job ReceiptJob?
+  disputes Dispute[]
+  @@unique([userId, idempotencyKey])
+  @@index([shopId, status, createdAt])
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+model StatusHistory {
+  id String @id @default(uuid())
+  transactionId String
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  status TransactionStatus
+  reason String
+  actorId String?
+  createdAt DateTime @default(now())
+  @@index([transactionId])
+}
+model Verification {
+  id String @id @default(uuid())
+  transactionId String @unique
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  provider String
+  rawText String @db.Text
+  confidence Float
+  merchantName String?
+  receiptNumber String? @db.VarChar(191)
+  receiptDate DateTime?
+  receiptTime String?
+  amount Decimal? @db.Decimal(12,2)
+  currency String?
+  createdAt DateTime @default(now())
+  @@index([receiptNumber])
+}
+model FraudFlag {
+  id String @id @default(uuid())
+  transactionId String
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  code String
+  detail String
+  createdAt DateTime @default(now())
+  @@index([transactionId])
+}
+model ReceiptJob {
+  id String @id @default(uuid())
+  transactionId String @unique
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  state String @default("QUEUED")
+  attempts Int @default(0)
+  availableAt DateTime @default(now())
+  lockedAt DateTime?
+  lastError String? @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([state, availableAt])
+}
+model CommissionRule {
+  id String @id @default(uuid())
+  merchantId String?
+  merchant Merchant? @relation(fields: [merchantId], references: [id])
+  rateBps Int @default(1000)
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  ledger CommissionLedger[]
+}
+model CommissionLedger {
+  id String @id @default(uuid())
+  transactionId String @unique
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  ruleId String
+  rule CommissionRule @relation(fields: [ruleId], references: [id])
+  rateBps Int
+  purchaseAmount Decimal @db.Decimal(12,2)
+  amount Decimal @db.Decimal(12,2)
+  provisional Boolean @default(true)
+  settlementStatus String @default("POLICY_PENDING")
+  createdAt DateTime @default(now())
+}
+model DiscountRule {
+  id String @id @default(uuid())
+  name String
+  configuration Json
+  enabled Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Notification {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  title String
+  body String
+  readAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([userId, createdAt])
+}
+model AuditLog {
+  id String @id @default(uuid())
+  actorId String?
+  actor User? @relation(fields: [actorId], references: [id])
+  action String
+  entityId String
+  detail Json
+  createdAt DateTime @default(now())
+  @@index([createdAt])
+}
+model Dispute {
+  id String @id @default(uuid())
+  transactionId String
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  reason String @db.Text
+  status String @default("OPEN")
+  resolution String? @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model SystemSetting {
+  key String @id
+  value Json
+  updatedAt DateTime @updatedAt
+}
+
+enum OfferStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  ARCHIVED
+}
+enum ClaimStatus {
+  CLAIMED
+  REDEEMED
+  EXPIRED
+  CANCELLED
+}
+model MerchantCategory {
+  id String @id @default(uuid())
+  slug String @unique @db.VarChar(191)
+  name String
+  sortOrder Int @default(0)
+  merchants Merchant[]
+  offers Offer[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  archivedAt DateTime?
+}
+model Event {
+  id String @id @default(uuid())
+  name String
+  isDemo Boolean @default(true)
+  startsAt DateTime?
+  venue String?
+  offers Offer[]
+  createdAt DateTime @default(now())
+}
+model Product {
+  id String @id @default(uuid())
+  name String
+  description String @db.Text
+  isDemo Boolean @default(true)
+  offers Offer[]
+  createdAt DateTime @default(now())
+}
+model PromotionalCampaign {
+  id String @id @default(uuid())
+  slug String @unique @db.VarChar(191)
+  name String
+  offerId String?
+  offer Offer? @relation(fields: [offerId], references: [id])
+  active Boolean @default(true)
+  startsAt DateTime?
+  expiresAt DateTime?
+  referrals ReferralLink[]
+  touches CampaignTouch[]
+  claims OfferClaim[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model ReferralLink {
+  id String @id @default(uuid())
+  campaignId String
+  campaign PromotionalCampaign @relation(fields: [campaignId], references: [id])
+  code String @unique @db.VarChar(191)
+  label String
+  active Boolean @default(true)
+  claims OfferClaim[]
+  createdAt DateTime @default(now())
+}
+model CampaignTouch {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  campaignId String
+  campaign PromotionalCampaign @relation(fields: [campaignId], references: [id])
+  referralCode String @default("") @db.VarChar(191)
+  createdAt DateTime @default(now())
+  @@unique([userId, campaignId, referralCode])
+}
+model OfferClaim {
+  id String @id @default(uuid())
+  reference String @unique @db.VarChar(191)
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  offerId String
+  offer Offer @relation(fields: [offerId], references: [id])
+  campaignId String?
+  campaign PromotionalCampaign? @relation(fields: [campaignId], references: [id])
+  referralLinkId String?
+  referralLink ReferralLink? @relation(fields: [referralLinkId], references: [id])
+  status ClaimStatus @default(CLAIMED)
+  titleSnapshot String
+  termsSnapshot String @db.Text
+  discountedPrice Decimal @db.Decimal(12,2)
+  originalPrice Decimal? @db.Decimal(12,2)
+  isDemo Boolean
+  idempotencyKey String @db.VarChar(191)
+  requestHash String
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  redemption RedemptionRecord?
+  @@unique([userId, idempotencyKey])
+  @@index([offerId, userId])
+  @@index([userId, createdAt])
+  @@index([status, expiresAt])
+}
+model RedemptionRecord {
+  id String @id @default(uuid())
+  claimId String @unique
+  claim OfferClaim @relation(fields: [claimId], references: [id])
+  verifiedById String
+  verifiedBy User @relation(fields: [verifiedById], references: [id])
+  note String
+  createdAt DateTime @default(now())
+}

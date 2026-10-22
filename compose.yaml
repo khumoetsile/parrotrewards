@@ -1,0 +1,16 @@
+services:
+  mysql:
+    image: mysql:8.0
+    ports: ["127.0.0.1:3307:3306"]
+    environment:
+      MYSQL_DATABASE: pula_mvp_dev
+      MYSQL_USER: pula_dev
+      MYSQL_PASSWORD: pula_dev_local_only
+      MYSQL_ROOT_PASSWORD: local_disposable_root_only
+    volumes: [pula_mysql_dev:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      retries: 30
+volumes:
+  pula_mysql_dev:

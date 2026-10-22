@@ -1,0 +1,102 @@
+name: Backend CI and cPanel deployment
+on:
+  pull_request:
+    paths: ['backend/**', '.github/workflows/backend.yml']
+  push:
+    branches: [main]
+    paths: ['backend/**', '.github/workflows/backend.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: disposable-ci-password
+          MYSQL_DATABASE: pula_mvp_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -pdisposable-ci-password"
+          --health-interval=10s --health-timeout=5s --health-retries=20
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      NODE_ENV: test
+      DATABASE_URL: mysql://root:disposable-ci-password@127.0.0.1:3306/pula_mvp_test
+      JWT_SECRET: disposable-ci-secret-at-least-32-characters
+      UPLOAD_DIR: ./test-artifacts/receipts
+      OFFER_IMAGE_DIR: ./test-artifacts/offer-images
+      OCR_CACHE_DIR: ./ocr-cache
+      RUN_DB_TESTS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run db:validate
+      - run: npm run db:generate
+      - run: npm run db:migrate
+      # Existing claims integration tests require the fictional category catalogue.
+      # This runs only in disposable CI MySQL, never in the production deploy job.
+      - run: npm run db:seed:offers
+      - run: npm run build
+      - run: npm test
+      - name: Package only deployment sources
+        run: tar -czf ../backend.tgz package.json package-lock.json tsconfig.json src prisma deploy
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend
+          path: backend.tgz
+          retention-days: 7
+  deploy:
+    needs: verify
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      DEPLOY_HOST: ${{ secrets.CPANEL_SSH_HOST }}
+      DEPLOY_PORT: ${{ secrets.CPANEL_SSH_PORT }}
+      DEPLOY_USER: ${{ secrets.CPANEL_SSH_USER }}
+      DEPLOY_ROOT: ${{ vars.CPANEL_APP_ROOT }}
+      HEALTH_URL: ${{ vars.CPANEL_HEALTH_URL }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: backend
+      - name: Configure pinned SSH connection
+        env:
+          PRIVATE_KEY: ${{ secrets.CPANEL_SSH_PRIVATE_KEY }}
+          KNOWN_HOSTS: ${{ secrets.CPANEL_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$PRIVATE_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+          [[ "$DEPLOY_PORT" =~ ^[0-9]+$ ]]
+          [[ "$DEPLOY_HOST" =~ ^[a-zA-Z0-9.-]+$ ]]
+          [[ "$DEPLOY_USER" =~ ^[a-zA-Z0-9_-]+$ ]]
+          [[ "$DEPLOY_ROOT" =~ ^/home/[a-zA-Z0-9_/-]+$ ]]
+          [[ "$HEALTH_URL" =~ ^https://[a-zA-Z0-9.-]+$ ]]
+      - name: Upload and activate release
+        run: |
+          set -euo pipefail
+          tar -xzf backend.tgz deploy/deploy.sh
+          scp -P "$DEPLOY_PORT" backend.tgz "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_ROOT/incoming-$GITHUB_SHA.tgz"
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash -s -- '$DEPLOY_ROOT' '$GITHUB_SHA' '$DEPLOY_ROOT/incoming-$GITHUB_SHA.tgz' '$HEALTH_URL'" < deploy/deploy.sh
+      - name: Remove runner key
+        if: always()
+        run: rm -f ~/.ssh/id_ed25519

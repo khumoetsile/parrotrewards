@@ -1,0 +1,12 @@
+import { Router } from 'express';
+import { db } from './db.js';
+export const promotionLanding=Router();
+const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
+promotionLanding.get('/p/:slug',async(req,res)=>{
+ const now=new Date();const campaign=await db.promotionalCampaign.findFirst({where:{slug:String(req.params.slug),active:true,AND:[{OR:[{startsAt:null},{startsAt:{lte:now}}]},{OR:[{expiresAt:null},{expiresAt:{gt:now}}]}]},include:{offer:true}});
+ if(!campaign)return res.status(404).type('html').send('<h1>Parrot Rewards</h1><p>This campaign is unavailable.</p>');
+ const ref=typeof req.query.ref==='string'?req.query.ref:'';
+ const appLink=`parrotrewards://promo/${encodeURIComponent(campaign.slug)}${ref?'?ref='+encodeURIComponent(ref):''}`;
+ const download=(platform:string)=>{const value=process.env[platform+'_DOWNLOAD_URL'];if(!value)return '<p>Download will be available here once app distribution is enabled.</p>';try{if(new URL(value).protocol!=='https:')return '';return `<a href="${escape(value)}">Download for ${platform==='ANDROID'?'Android':'iOS'}</a>`;}catch{return '';}};
+ res.type('html').send(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Parrot Rewards · ${escape(campaign.name)}</title><style>body{margin:0;background:#eff5ef;font:17px system-ui;color:#163d30}main{max-width:520px;margin:8vh auto;padding:30px;background:white;border-radius:28px}h1{font-size:40px;letter-spacing:-1px}a{display:block;background:#187649;color:white;padding:16px;border-radius:14px;margin:16px 0;text-decoration:none}small{color:#5a6d60}strong{font-size:28px}</style></head><body><main><small>PARROT REWARDS</small><h1>${escape(campaign.offer?.title??'Discover your next discount')}</h1>${campaign.offer?.discountedPrice?`<strong>BWP ${campaign.offer.discountedPrice.toFixed(2)}</strong>`:''}<p>Register, discover offers and save your discount claim.</p><a href="${escape(appLink)}">Open Parrot Rewards</a>${download('ANDROID')}${download('IOS')}<p>${campaign.offer?.isDemo?'Sample offer: provider participation and availability are not confirmed. ':''}Present your claim to the provider to redeem your discount. A claim is not proof of payment or an admission ticket.</p><small>Discover offers. Save discounts. Redeem with the provider.</small></main></body></html>`);
+});
