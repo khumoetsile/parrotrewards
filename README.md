@@ -1,5 +1,7 @@
 # Parrot Rewards — discount discovery and claims prototype
 
+Shop QR discounts: see [owner setup, customer scanning and rollout](docs/SHOP_QR_DISCOUNTS.md) for branch-specific discounted items and printable shop codes.
+
 Backend production hosting: see [cPanel deployment and GitHub Actions setup](docs/CPANEL_DEPLOYMENT.md) for application settings, secrets, migrations, OCR cron, and recovery.
 
 Main website and partner portal: see [website deployment](docs/WEBSITE_DEPLOYMENT.md) for public URLs, production builds, and automatic publishing.

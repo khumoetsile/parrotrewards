@@ -1,3 +1,4 @@
+import { shopDiscountRouter, shopQrToken } from './shop-discounts.js';
 import { providerRouter } from './providers.js';
 import { categoryRouter,lockActiveCategory } from './categories.js';
 import express, { Request, Response, NextFunction } from 'express';
@@ -21,7 +22,7 @@ import { authenticate, roles, tokens, accessToken, refreshValue } from './auth.j
 import { ApiError, hash, money, formatMoney } from './domain.js';
 import { transactionInclude, transition, visibleWhere, findVisible } from './transactions.js';
 import { offerImageRouter } from './offer-images.js';
-import { offerRouter } from './offers.js';
+import { offerRouter, published, offerInclude } from './offers.js';
 import { promotionLanding } from './promotions.js';
 const id=z.string().uuid();
 const credentials=z.object({email:z.string().email().max(191).transform(s=>s.toLowerCase()),password:z.string().min(12).max(72).refine(s=>Buffer.byteLength(s,'utf8')<=72,'Password must fit within 72 UTF-8 bytes.')});
@@ -45,6 +46,7 @@ export function createApp() {
   app.use('/api',categoryRouter);
   app.use('/api',offerImageRouter);
   app.use('/api',offerRouter);
+  app.use('/api',shopDiscountRouter);
   app.get('/health',(_req,res)=>ok(res,{service:'parrot-rewards-api',status:'up',revision:process.env.APP_REVISION || 'local'}));
   app.get('/ready',async(_req,res)=> { try { await db.$queryRaw`SELECT 1`; ok(res,{database:'ready'}); } catch { res.status(503).json({error:{code:'NOT_READY',message:'Database unavailable.'}}); } });
   const authLimit=rateLimit({windowMs:15*60000,limit:30,standardHeaders:'draft-8',legacyHeaders:false,handler:limited});
@@ -99,10 +101,10 @@ export function createApp() {
   app.get('/api/shop-categories',async(_req,res)=>{const categories=await db.merchant.findMany({where:{approved:true,shops:{some:{active:true}}},select:{category:true},distinct:['category'],orderBy:{category:'asc'}});ok(res,categories.map(c=>c.category));});
   app.get('/api/shops',async(req,res)=> {
     const search=z.string().max(100).optional().parse(req.query.search); const category=z.string().max(60).optional().parse(req.query.category);
-    ok(res,await db.shop.findMany({where:{active:true,merchant:{approved:true,...(category?{category}:{})},...(search?{OR:[{name:{contains:search}},{merchant:{name:{contains:search}}}]}:{})},include:{merchant:true,offers:{where:{active:true,OR:[{expiresAt:null},{expiresAt:{gt:new Date()}}]}}},...page(req),orderBy:{name:'asc'}}));
+    ok(res,await db.shop.findMany({where:{active:true,merchant:{approved:true,...(category?{category}:{})},...(search?{OR:[{name:{contains:search}},{merchant:{name:{contains:search}}}]}:{})},include:{merchant:true,offers:{where:published(),include:offerInclude}},...page(req),orderBy:{name:'asc'}}));
   });
-  app.get('/api/shops/:id',async(req,res)=> { const shop=await db.shop.findFirst({where:{id:param(req),active:true,merchant:{approved:true}},include:{merchant:true,offers:{where:{active:true,OR:[{expiresAt:null},{expiresAt:{gt:new Date()}}]}}}}); if(!shop) throw new ApiError(404,'NOT_FOUND','Shop unavailable.'); ok(res,shop); });
-  app.post('/api/qr/resolve',async(req,res)=> { const {token}=z.object({token:z.string().min(16).max(191).transform(s=>s.replace(/^pula:\/\/shop\//,''))}).parse(req.body); const qr=await db.shopQr.findFirst({where:{token,active:true,shop:{active:true,merchant:{approved:true}}},include:{shop:{include:{merchant:true,offers:true}}}}); if(!qr) throw new ApiError(404,'INVALID_QR','This shop QR code is unavailable.'); ok(res,qr.shop); });
+  app.get('/api/shops/:id',async(req,res)=> { const shop=await db.shop.findFirst({where:{id:param(req),active:true,merchant:{approved:true}},include:{merchant:true,offers:{where:published(),include:offerInclude}}}); if(!shop) throw new ApiError(404,'NOT_FOUND','Shop unavailable.'); ok(res,shop); });
+  app.post('/api/qr/resolve',async(req,res)=> { const {token}=z.object({token:shopQrToken}).parse(req.body); const qr=await db.shopQr.findFirst({where:{token,active:true,shop:{active:true,merchant:{approved:true}}},include:{shop:{include:{merchant:true,offers:{where:published(),include:offerInclude}}}}}); if(!qr) throw new ApiError(404,'INVALID_QR','This shop QR code is unavailable.'); ok(res,qr.shop); });
   app.use('/api',authenticate);
   app.get('/api/me',async(req,res)=>ok(res,await db.user.findUniqueOrThrow({where:{id:req.user!.id},select:publicUser})));
   app.patch('/api/me',async(req,res)=> { const data=z.object({name:z.string().trim().min(2).max(100).optional(),notificationEnabled:z.boolean().optional()}).strict().parse(req.body); ok(res,await db.user.update({where:{id:req.user!.id},data,select:publicUser})); });
@@ -159,7 +161,7 @@ export function createApp() {
   app.patch('/api/merchants/:id',roles('MERCHANT','ADMIN'),async(req,res)=> { await authorizeMerchant(req,param(req)); const data=z.object({description:z.string().max(3000),category:z.string().min(2).max(60)}).partial().strict().parse(req.body); const result=await db.merchant.update({where:{id:param(req)},data}); await audit(req.user!.id,'MERCHANT_UPDATED',result.id,data); ok(res,result); });
   app.post('/api/merchants/:id/shops',roles('MERCHANT','ADMIN'),async(req,res)=> { await authorizeMerchant(req,param(req)); const body=z.object({name:z.string().min(2).max(100),address:z.string().min(3).max(300)}).parse(req.body); const shop=await db.shop.create({data:{...body,merchantId:param(req),qr:{create:{token:randomBytes(32).toString('base64url')}}},include:{qr:true}}); await audit(req.user!.id,'SHOP_CREATED',shop.id); ok(res,shop,201); });
   app.patch('/api/manage/shops/:id',roles('MERCHANT','ADMIN'),async(req,res)=> { const shop=await db.shop.findUniqueOrThrow({where:{id:param(req)}}); await authorizeMerchant(req,shop.merchantId); const data=z.object({name:z.string().min(2).max(100).optional(),address:z.string().min(3).max(300).optional(),active:z.boolean().optional()}).strict().parse(req.body); ok(res,await db.shop.update({where:{id:shop.id},data})); await audit(req.user!.id,'SHOP_UPDATED',shop.id,data); });
-  app.get('/api/manage/shops/:id/qr',roles('MERCHANT','ADMIN'),async(req,res)=> { const shop=await db.shop.findUniqueOrThrow({where:{id:param(req)},include:{qr:true}}); await authorizeMerchant(req,shop.merchantId); if(!shop.qr?.active) throw new ApiError(404,'QR_UNAVAILABLE','QR code unavailable.'); const svg=await QRCode.toString(`pula://shop/${shop.qr.token}`,{type:'svg',margin:4}); res.type('image/svg+xml').set('Content-Disposition','attachment; filename="shop-qr.svg"').send(svg); });
+  app.get('/api/manage/shops/:id/qr',roles('MERCHANT','ADMIN'),async(req,res)=> { const shop=await db.shop.findUniqueOrThrow({where:{id:param(req)},include:{qr:true}}); await authorizeMerchant(req,shop.merchantId); if(!shop.qr?.active) throw new ApiError(404,'QR_UNAVAILABLE','QR code unavailable.'); const svg=await QRCode.toString(`parrotrewards://shop/${shop.qr.token}`,{type:'svg',margin:4}); res.type('image/svg+xml').set('Content-Disposition','attachment; filename="shop-qr.svg"').send(svg); });
   app.post('/api/manage/shops/:id/qr/rotate',roles('ADMIN'),async(req,res)=> { const result=await db.shopQr.update({where:{shopId:param(req)},data:{token:randomBytes(32).toString('base64url'),active:true}}); await audit(req.user!.id,'QR_ROTATED',param(req)); ok(res,result); });
   app.post('/api/manage/shops/:id/offers',roles('MERCHANT','ADMIN'),async(req,res)=> { const shop=await db.shop.findUniqueOrThrow({where:{id:param(req)}}); await authorizeMerchant(req,shop.merchantId); const data=z.object({title:z.string().min(3).max(100),description:z.string().min(3).max(2000),expiresAt:z.coerce.date().optional()}).parse(req.body); ok(res,await db.offer.create({data:{...data,shopId:shop.id}}),201); });
   app.get('/api/reports',roles('MERCHANT','ADMIN'),async(req,res)=> {
