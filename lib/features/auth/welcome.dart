@@ -38,7 +38,7 @@ class WelcomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 22),
                 const Text(
-                'Discover offers from local providers. Save your discount and enjoy more of what matters to you.',
+                  'Discover offers from local providers. Save your discount and enjoy more of what matters to you.',
                   style: TextStyle(
                     fontSize: 17,
                     height: 1.6,
@@ -60,6 +60,12 @@ class WelcomeScreen extends StatelessWidget {
                   style: TextButton.styleFrom(foregroundColor: Colors.white),
                   onPressed: () => context.go('/login'),
                   child: const Text('Already a member? Sign in'),
+                ),
+                TextButton.icon(
+                  style: TextButton.styleFrom(foregroundColor: Colors.white),
+                  onPressed: () => context.push('/scan-shop'),
+                  icon: const Icon(Icons.qr_code_scanner),
+                  label: const Text('Scan a shop QR'),
                 ),
               ],
             ),

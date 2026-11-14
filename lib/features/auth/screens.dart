@@ -1,3 +1,4 @@
+import '../offers/shop_discounts.dart' show pendingShopOfferProvider;
 export 'welcome.dart' show WelcomeScreen;
 
 import 'dart:convert';
@@ -84,9 +85,10 @@ class _AuthState extends ConsumerState<AuthScreen> {
             password.text,
             name: widget.register ? name.text.trim() : null,
           );
-      final destination = await ref
-          .read(promoProvider.notifier)
-          .destinationAfterAuth();
+      final destination =
+          ref.read(pendingShopOfferProvider) ??
+          await ref.read(promoProvider.notifier).destinationAfterAuth();
+      ref.read(pendingShopOfferProvider.notifier).state = null;
       if (mounted) context.go(destination);
     } catch (e) {
       if (mounted) {

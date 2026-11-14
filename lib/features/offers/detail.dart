@@ -111,6 +111,14 @@ class _DetailState extends ConsumerState<OfferDetailScreen> {
                         ),
                       ),
                     const SizedBox(height: 22),
+                    if (item.shopName != null) ...[
+                      Text(
+                        'Redeem at ${item.shopName}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(item.shopAddress ?? ''),
+                      const SizedBox(height: 16),
+                    ],
                     Text(
                       item.description,
                       style: const TextStyle(height: 1.6, fontSize: 16),

@@ -238,6 +238,13 @@ class _ClaimDetailState extends ConsumerState<ClaimDetailScreen> {
             style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           ),
           Center(child: StatusBadge(c['status'])),
+          if (c['offer']?['shop'] != null) ...[
+            Text(
+              'Redeem at ${c['offer']['shop']['name']}',
+              textAlign: TextAlign.center,
+            ),
+            Text(c['offer']['shop']['address'], textAlign: TextAlign.center),
+          ],
           const SizedBox(height: 20),
           Card(
             child: Padding(

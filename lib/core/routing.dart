@@ -1,3 +1,4 @@
+import '../features/offers/shop_discounts.dart';
 import 'navigation.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,6 +27,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           state.uri.path.startsWith('/p/')) {
         return null;
       }
+      if (state.uri.scheme == 'parrotrewards' && state.uri.host == 'shop') {
+        return '/shop-qr${state.uri.path}';
+      }
+      if (state.uri.path == '/scan-shop' ||
+          state.uri.path.startsWith('/shop-qr/')) {
+        return null;
+      }
       const publicPaths = ['/', '/welcome', '/login', '/register', '/forgot'];
       if (!publicPaths.contains(state.uri.path) &&
           ref.read(sessionProvider) == null) {
@@ -34,6 +42,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/scan-shop',
+        builder: (_, _) => const ShopDiscountsScreen(),
+      ),
+      GoRoute(
+        path: '/shop-qr/:token',
+        builder: (_, state) =>
+            ShopDiscountsScreen(token: state.pathParameters['token']!),
+      ),
       GoRoute(path: '/', builder: (_, _) => const SplashScreen()),
       GoRoute(path: '/welcome', builder: (_, _) => const WelcomeScreen()),
       GoRoute(path: '/login', builder: (_, _) => const AuthScreen()),

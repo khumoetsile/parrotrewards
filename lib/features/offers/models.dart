@@ -10,6 +10,7 @@ class PromotionOffer {
       action;
   final String price;
   final String provider;
+  final String? shopName, shopAddress;
   final String? originalPrice, savings;
   final int? discountPercent;
   final bool isDemo;
@@ -25,6 +26,8 @@ class PromotionOffer {
       action = json['claimAction'] ?? 'Claim Discount',
       price = json['discountedPrice'],
       provider = json['merchant']?['name'] ?? '',
+      shopName = json['shop']?['name'],
+      shopAddress = json['shop']?['address'],
       originalPrice = json['originalPrice'],
       savings = json['savings'],
       discountPercent = json['discountPercent'],

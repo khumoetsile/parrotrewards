@@ -98,6 +98,12 @@ class _DiscoverState extends ConsumerState<DiscoverOffersScreen> {
               letterSpacing: -1.3,
             ),
           ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: () => context.push('/scan-shop'),
+            icon: const Icon(Icons.qr_code_scanner),
+            label: const Text('Scan shop QR'),
+          ),
           const SizedBox(height: 22),
           Container(
             padding: const EdgeInsets.all(16),
