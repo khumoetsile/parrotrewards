@@ -14,10 +14,14 @@ class Session extends StateNotifier<Map<String, dynamic>?> {
       if (await api.storage.read(key: 'accessToken') == null) return false;
       state = Map<String, dynamic>.from(await api.get('/me'));
       return true;
-    } catch (_) {
-      await api.clear();
-      state = null;
-      return false;
+    } catch (e) {
+      if (isExpiredSession(e)) {
+        await api.clear();
+        state = null;
+        return false;
+      }
+      // Offline/timeout/server errors do not mean the credentials expired.
+      rethrow;
     }
   }
 

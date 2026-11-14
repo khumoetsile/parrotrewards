@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../profile/privacy.dart';
+
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
@@ -60,6 +62,14 @@ class WelcomeScreen extends StatelessWidget {
                   style: TextButton.styleFrom(foregroundColor: Colors.white),
                   onPressed: () => context.go('/login'),
                   child: const Text('Already a member? Sign in'),
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(foregroundColor: Colors.white),
+                  onPressed: () => openPublicPrivacyLink(
+                    context,
+                    Uri.parse(privacyPolicyUrl),
+                  ),
+                  child: const Text('Privacy policy'),
                 ),
                 TextButton.icon(
                   style: TextButton.styleFrom(foregroundColor: Colors.white),

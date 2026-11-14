@@ -26,19 +26,29 @@ class Api {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final token = await storage.read(key: 'accessToken');
-          if (token != null) options.headers['Authorization'] = 'Bearer $token';
-          handler.next(options);
+          try {
+            final token = await storage.read(key: 'accessToken');
+            if (token != null) {
+              options.headers['Authorization'] = 'Bearer $token';
+            }
+            handler.next(options);
+          } catch (e) {
+            handler.reject(DioException(requestOptions: options, error: e));
+          }
         },
         onError: (error, handler) async {
           final options = error.requestOptions;
           if (error.response?.statusCode == 401 &&
               options.extra['retried'] != true &&
               !options.path.startsWith('/auth/')) {
+            options.extra['retried'] = true;
             try {
-              _refreshing ??= _refresh();
-              await _refreshing;
-              options.extra['retried'] = true;
+              final current = await storage.read(key: 'accessToken');
+              // A late 401 may belong to the token another request already renewed.
+              if (current == null ||
+                  options.headers['Authorization'] == 'Bearer $current') {
+                await _renewSession();
+              }
               options.headers['Authorization'] =
                   'Bearer ${await storage.read(key: 'accessToken')}';
               if (options.data is FormData) {
@@ -46,10 +56,13 @@ class Api {
               }
               handler.resolve(await dio.fetch(options));
               return;
-            } catch (_) {
-              await clear();
-            } finally {
-              _refreshing = null;
+            } catch (e) {
+              handler.next(
+                e is DioException
+                    ? e
+                    : DioException(requestOptions: options, error: e),
+              );
+              return;
             }
           }
           handler.next(error);
@@ -57,9 +70,24 @@ class Api {
       ),
     );
   }
+  Future<void> _renewSession() async {
+    final pending = _refreshing;
+    if (pending != null) return pending;
+    final renewal = _refresh();
+    _refreshing = renewal;
+    try {
+      await renewal;
+    } catch (e) {
+      if (isExpiredSession(e)) await clear();
+      rethrow;
+    } finally {
+      if (identical(_refreshing, renewal)) _refreshing = null;
+    }
+  }
+
   Future<void> _refresh() async {
     final token = await storage.read(key: 'refreshToken');
-    if (token == null) throw StateError('No session');
+    if (token == null) throw const ExpiredSession();
     final response = await dio.post(
       '/auth/refresh',
       data: {'refreshToken': token},
@@ -85,11 +113,40 @@ class Api {
       (await dio.patch(path, data: data)).data['data'];
 }
 
+class ExpiredSession implements Exception {
+  const ExpiredSession();
+}
+
+bool isExpiredSession(Object error) {
+  if (error is ExpiredSession) return true;
+  if (error is! DioException ||
+      ![401, 403].contains(error.response?.statusCode)) {
+    return false;
+  }
+  final data = error.response?.data;
+  // A proxy/WAF error page is not an authoritative rejection of the account.
+  return data is Map &&
+      data['error'] is Map &&
+      [
+        'INVALID_REFRESH',
+        'INVALID_TOKEN',
+        'AUTH_REQUIRED',
+        'ACCOUNT_DISABLED',
+      ].contains(data['error']['code']);
+}
+
 String errorMessage(Object error) {
   if (error is DioException) {
     final data = error.response?.data;
-    if (data is Map && data['error'] is Map) {
+    if (data is Map &&
+        data['error'] is Map &&
+        data['error']['message'] is String) {
       return data['error']['message'] as String;
+    }
+    if (error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.receiveTimeout ||
+        error.type == DioExceptionType.sendTimeout) {
+      return 'The connection took too long. Please try again.';
     }
     return 'Could not connect. Check your connection and try again.';
   }

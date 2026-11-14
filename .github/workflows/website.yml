@@ -30,6 +30,7 @@ jobs:
       - run: flutter pub get
       - run: flutter test
       - run: flutter build web --release --no-web-resources-cdn --dart-define=API_URL=https://api.parrotrewards.org/api
+      - run: node scripts/verify-public-pages.mjs build/web
       - run: npm ci
         working-directory: portals/merchant-admin
       - run: npm test

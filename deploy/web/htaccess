@@ -7,6 +7,8 @@ RewriteCond %{HTTPS} !=on [OR]
 RewriteCond %{HTTP_HOST} !^parrotrewards\.org$ [NC]
 RewriteRule ^ https://parrotrewards.org%{REQUEST_URI} [R=308,L,NE]
 RewriteRule ^\.well-known/ - [L]
+RewriteRule ^privacy-policy/?$ _web/customer/privacy-policy.html [END]
+RewriteRule ^account-deletion/?$ _web/customer/account-deletion.html [END]
 # These are internal release paths, never public URLs.
 RewriteCond %{THE_REQUEST} \s/+_web(?:/|\s) [NC]
 RewriteRule ^ - [F,L]

@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_application_1/core/api.dart';
+import 'package:flutter_application_1/core/routing.dart';
+import 'package:flutter_application_1/main.dart';
 import 'package:flutter_application_1/features/auth/screens.dart';
 import 'package:flutter_application_1/features/auth/state.dart';
 import 'package:flutter_application_1/features/offers/shop_discounts.dart';
@@ -52,7 +56,86 @@ class SignedInSession extends Session {
   }
 }
 
+class DeferredShopApi extends Api {
+  final requests = <String, Completer<dynamic>>{};
+  @override
+  Future<dynamic> post(String path, dynamic data) =>
+      (requests[data['token']] = Completer<dynamic>()).future;
+}
+
+Map<String, dynamic> branchResult(String name) => {
+  'shop': {
+    'name': name,
+    'address': 'Test address',
+    'merchant': {'name': 'Test provider'},
+  },
+  'offers': [],
+  'page': 1,
+  'totalPages': 1,
+};
+
 void main() {
+  testWidgets(
+    'a new QR deep link replaces an in-flight shop and ignores its late result',
+    (tester) async {
+      final api = DeferredShopApi();
+      final container = ProviderContainer(
+        overrides: [
+          apiProvider.overrideWithValue(api),
+          launchRouteProvider.overrideWithValue('/shop-qr/branch-a-token-1234'),
+        ],
+      );
+      addTearDown(container.dispose);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const ParrotRewardsApp(),
+        ),
+      );
+      await tester.pump();
+      expect(api.requests.keys, contains('branch-a-token-1234'));
+      container.read(routerProvider).go('/shop-qr/branch-b-token-5678');
+      await tester.pump();
+      await tester.pump();
+      expect(api.requests.keys, contains('branch-b-token-5678'));
+      api.requests['branch-b-token-5678']!.complete(branchResult('Branch B'));
+      await tester.pumpAndSettle();
+      expect(find.text('Branch B'), findsOneWidget);
+      api.requests['branch-a-token-1234']!.complete(branchResult('Branch A'));
+      await tester.pumpAndSettle();
+      expect(find.text('Branch B'), findsOneWidget);
+      expect(find.text('Branch A'), findsNothing);
+    },
+  );
+  testWidgets('two completed QR deep links display the newest branch', (
+    tester,
+  ) async {
+    final api = DeferredShopApi();
+    final container = ProviderContainer(
+      overrides: [
+        apiProvider.overrideWithValue(api),
+        launchRouteProvider.overrideWithValue('/shop-qr/branch-a-token-1234'),
+      ],
+    );
+    addTearDown(container.dispose);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const ParrotRewardsApp(),
+      ),
+    );
+    await tester.pump();
+    api.requests['branch-a-token-1234']!.complete(branchResult('Branch A'));
+    await tester.pumpAndSettle();
+    expect(find.text('Branch A'), findsOneWidget);
+    container.read(routerProvider).go('/shop-qr/branch-b-token-5678');
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Branch A'), findsNothing);
+    api.requests['branch-b-token-5678']!.complete(branchResult('Branch B'));
+    await tester.pumpAndSettle();
+    expect(find.text('Branch B'), findsOneWidget);
+  });
   testWidgets(
     'a scanned shop shows its items and preserves the selected item through sign-in',
     (tester) async {

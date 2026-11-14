@@ -20,30 +20,63 @@ class SplashScreen extends ConsumerStatefulWidget {
 }
 
 class _SplashState extends ConsumerState<SplashScreen> {
+  String? error;
+  bool busy = true;
   @override
   void initState() {
     super.initState();
-    Future.microtask(() async {
+    Future.microtask(open);
+  }
+
+  Future<void> open() async {
+    if (!mounted) return;
+    setState(() {
+      busy = true;
+      error = null;
+    });
+    try {
       final restored = await ref.read(sessionProvider.notifier).restore();
       final destination = restored
           ? await ref.read(promoProvider.notifier).destinationAfterAuth()
           : '/welcome';
       if (mounted) context.go(destination);
-    });
+    } catch (e) {
+      if (mounted) setState(() => error = errorMessage(e));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
   }
 
   @override
-  Widget build(BuildContext context) => const Scaffold(
-    body: Center(
-      child: Text(
-        'Parrot Rewards',
-        style: TextStyle(
-          fontSize: 52,
-          fontWeight: FontWeight.w800,
-          color: Color(0xff16755d),
-        ),
-      ),
-    ),
+  Widget build(BuildContext context) => Scaffold(
+    body: error != null
+        ? Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.cloud_off_outlined, size: 48),
+                  const SizedBox(height: 16),
+                  Text(error!, textAlign: TextAlign.center),
+                  TextButton(
+                    onPressed: busy ? null : open,
+                    child: const Text('Try again'),
+                  ),
+                ],
+              ),
+            ),
+          )
+        : const Center(
+            child: Text(
+              'Parrot Rewards',
+              style: TextStyle(
+                fontSize: 52,
+                fontWeight: FontWeight.w800,
+                color: Color(0xff16755d),
+              ),
+            ),
+          ),
   );
 }
 

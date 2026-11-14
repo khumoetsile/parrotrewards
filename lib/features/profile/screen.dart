@@ -6,6 +6,7 @@ import '../../core/api.dart';
 import '../../core/widgets.dart';
 import '../auth/state.dart';
 import '../offers/promotion.dart';
+import 'privacy.dart';
 
 final profileResetProvider = StateProvider<int>((ref) => 0);
 final profileDirtyProvider = StateProvider<bool>((ref) => false);
@@ -151,6 +152,20 @@ class _ProfileState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 18),
             const Text(
               'Parrot Rewards helps you discover offers and save discount claims. Present your claim to the provider to redeem your discount. A claim does not confirm payment or admission.',
+            ),
+            ListTile(
+              leading: const Icon(Icons.privacy_tip_outlined),
+              title: const Text('Privacy policy'),
+              onTap: () =>
+                  openPrivacyLink(ref, context, Uri.parse(privacyPolicyUrl)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_remove_outlined),
+              title: const Text('Request account deletion'),
+              subtitle: const Text(
+                'Contact Parrot to request removal of your account and data',
+              ),
+              onTap: () => context.push('/delete-account'),
             ),
             const SizedBox(height: 20),
             OutlinedButton(

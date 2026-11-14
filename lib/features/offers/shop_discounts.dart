@@ -24,6 +24,7 @@ class _ShopDiscountsState extends ConsumerState<ShopDiscountsScreen> {
   String? currentToken, error;
   bool busy = false;
   int page = 1;
+  int requestVersion = 0;
   @override
   void initState() {
     super.initState();
@@ -31,7 +32,27 @@ class _ShopDiscountsState extends ConsumerState<ShopDiscountsScreen> {
   }
 
   @override
+  void didUpdateWidget(covariant ShopDiscountsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.token == widget.token) return;
+    requestVersion++;
+    busy = false;
+    result = null;
+    error = null;
+    currentToken = null;
+    page = 1;
+    code.clear();
+    final token = widget.token;
+    if (token != null) {
+      Future.microtask(() {
+        if (mounted && widget.token == token) load(token);
+      });
+    }
+  }
+
+  @override
   void dispose() {
+    requestVersion++;
     code.dispose();
     super.dispose();
   }
@@ -42,6 +63,7 @@ class _ShopDiscountsState extends ConsumerState<ShopDiscountsScreen> {
       setState(() => error = 'Scan a shop code or paste the text from its QR.');
       return;
     }
+    final version = ++requestVersion;
     setState(() {
       busy = true;
       error = null;
@@ -55,7 +77,7 @@ class _ShopDiscountsState extends ConsumerState<ShopDiscountsScreen> {
           {'token': token.trim()},
         ),
       );
-      if (mounted) {
+      if (mounted && version == requestVersion) {
         setState(() {
           result = data;
           currentToken = token.trim();
@@ -63,9 +85,11 @@ class _ShopDiscountsState extends ConsumerState<ShopDiscountsScreen> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => error = errorMessage(e));
+      if (mounted && version == requestVersion) {
+        setState(() => error = errorMessage(e));
+      }
     } finally {
-      if (mounted) setState(() => busy = false);
+      if (mounted && version == requestVersion) setState(() => busy = false);
     }
   }
 
@@ -77,18 +101,21 @@ class _ShopDiscountsState extends ConsumerState<ShopDiscountsScreen> {
 
   Future<void> open(PromotionOffer offer) async {
     if (busy) return;
+    final version = requestVersion;
     if (ref.read(sessionProvider) == null) {
       setState(() => busy = true);
       try {
         await ref.read(sessionProvider.notifier).restore();
       } catch (e) {
-        if (mounted) setState(() => error = errorMessage(e));
+        if (mounted && version == requestVersion) {
+          setState(() => error = errorMessage(e));
+        }
         return;
       } finally {
-        if (mounted) setState(() => busy = false);
+        if (mounted && version == requestVersion) setState(() => busy = false);
       }
     }
-    if (!mounted) return;
+    if (!mounted || version != requestVersion) return;
     final destination = '/offers/${offer.slug}';
     if (ref.read(sessionProvider) == null) {
       ref.read(pendingShopOfferProvider.notifier).state = destination;

@@ -10,6 +10,7 @@ import '../features/merchants/screens.dart';
 import '../features/transactions/screens.dart';
 import '../features/receipts/capture.dart';
 import '../features/profile/screen.dart';
+import '../features/profile/privacy.dart';
 import '../features/offers/discovery.dart';
 import '../features/offers/detail.dart';
 import '../features/offers/promotion.dart';
@@ -34,7 +35,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           state.uri.path.startsWith('/shop-qr/')) {
         return null;
       }
-      const publicPaths = ['/', '/welcome', '/login', '/register', '/forgot'];
+      const publicPaths = [
+        '/',
+        '/welcome',
+        '/login',
+        '/register',
+        '/forgot',
+        '/delete-account',
+      ];
       if (!publicPaths.contains(state.uri.path) &&
           ref.read(sessionProvider) == null) {
         return '/login';
@@ -42,6 +50,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/delete-account',
+        builder: (_, _) => const AccountDeletionScreen(),
+      ),
       GoRoute(
         path: '/scan-shop',
         builder: (_, _) => const ShopDiscountsScreen(),
