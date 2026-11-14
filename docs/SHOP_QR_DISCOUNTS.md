@@ -1,6 +1,6 @@
 # Shop QR discounts
 
-Implemented locally on 14 November 2026 for the next Android release, 0.2.0 (version code 2). Production has not been deployed by this change.
+Deployed the backend, admin portal and customer website on 14 November 2026. Android 0.2.0 (version code 2) was uploaded to the existing Closed Test track and submitted for review. Play Console shows Changes in review with quick checks running; the Android update is not yet confirmed available to testers. See [deployment receipt](SHOP_QR_DEPLOYMENT_2026-11-14.md).
 
 ## Owner workflow
 
@@ -33,6 +33,6 @@ API additions:
 
 Flutter tests cover scan-result rendering, an empty catalogue, revoked QR errors and returning to the chosen item after login. Admin tests cover required branch selection, pricing, stale branch lookup responses, existing offer editing and provider creation. Isolated MySQL tests cover owner-only writes, wrong-provider branches, both QR formats, draft/expired/future exclusions, inactive shops/providers, QR rotation, pagination, branch retention on claims and existing claim/redemption regressions. Test data lives in a disposable, separately named MySQL container, never in the production database.
 
-Roll out the backend and admin portal first using the existing deployment process. Then upload the new signed AAB to the existing Play closed-test track and install it from Play. Confirm code 2 is unused in Console; use a higher code if it has already been uploaded. Camera/QR scanning, custom-link launching and customer sign-in should then be tested on physical phones at a shop, including mobile data and Wi-Fi. The previously reported mobile-data connectivity issue is not established as fixed by this feature.
+Backend and website deployment completed, and Google accepted code 2 for submission to the existing closed-test track. Managed publishing remains off, so the selected-testers rollout is configured to proceed after successful checks and approval. Install the update from Play once available. Camera/QR scanning, custom-link launching and customer sign-in should then be tested on physical phones at a shop, including mobile data and Wi-Fi. The previously reported mobile-data connectivity issue is not established as fixed by this feature.
 
-No production offers, providers, accounts, prices or QR tokens have been changed during this implementation. No message or email has been sent for this change.
+No production offers, providers, accounts, prices or QR tokens were changed during implementation/deployment. The existing provider currently has no branches; add the real branch name/address in the live admin editor before downloading its QR. No message or email has been sent for this change.

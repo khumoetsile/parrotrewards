@@ -1,5 +1,7 @@
 # Main website and partner portal
 
+Shop QR discounts were published on 14 November 2026 through [workflow 43574810203](https://github.com/khumoetsile/parrotrewards/actions/runs/43574810203), revision `1a9b3e5a2d54c544d9d55f876d78efe3497e0bff`. Both public version endpoints were verified. The updated customer scanner and admin branch controls are live; see [deployment receipt](SHOP_QR_DEPLOYMENT_2026-11-14.md).
+
 - Customer website: `https://parrotrewards.org/`
 - Merchant and administrator portal: `https://parrotrewards.org/partners/`
 - API: `https://api.parrotrewards.org/api`
